@@ -24,6 +24,7 @@ def chat():
         user_input = input("You: ")
         if user_input.lower() == "exit":
             print("👋 Goodbye!")
+            print("I LOVE NIBBALOUS")
             break
 
         response = conversation.send_message(user_input)
