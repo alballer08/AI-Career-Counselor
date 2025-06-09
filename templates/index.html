@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Career Counselor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Base Styles & Resets */
         * {
             margin: 0;
             padding: 0;
@@ -12,218 +14,483 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background: #e0eafc; /* Light blue background */
             display: flex;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
             padding: 20px;
+            color: #333;
+            line-height: 1.6;
         }
 
+        /* Container - The main chat wrapper */
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
             width: 100%;
-            max-width: 800px;
-            height: 600px;
+            max-width: 760px; /* Slightly wider for better content flow */
+            height: 700px; /* Increased height */
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: all 0.3s ease-in-out;
         }
 
+        /* Header */
         .header {
-            background: linear-gradient(135deg, #2c3e50, #3498db);
-            color: white;
-            padding: 20px;
+            /* Gemini-inspired gradient */
+            background: linear-gradient(90deg, #6200EE 0%, #BB86FC 100%); 
+            color: #ffffff;
+            padding: 25px 30px; /* Increased padding */
             text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 2; /* Ensure it's above other elements */
         }
 
         .header h1 {
-            font-size: 2.2em;
-            margin-bottom: 5px;
+            font-size: 1.9em; /* Slightly smaller for balance */
+            font-weight: 600;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
         }
 
         .header p {
+            font-size: 0.95em;
             opacity: 0.9;
-            font-size: 1.1em;
         }
 
+        /* Chat Container & Messages */
         .chat-container {
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            position: relative;
         }
 
         .messages {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
-            background: #f8f9fa;
+            padding: 20px; /* Consistent padding */
+            background: #fdfdfd; /* Very light background */
+            border-radius: 0 0 16px 16px; /* Match container border-radius */
+            scroll-behavior: smooth; /* Smooth scrolling for new messages */
         }
 
         .message {
-            margin-bottom: 20px;
-            animation: fadeIn 0.3s ease-in;
+            margin-bottom: 18px; /* Consistent spacing */
+            animation: fadeIn 0.3s ease-out;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* User Message */
         .user-message {
-            text-align: right;
+            display: flex; /* Use flex to align right */
+            justify-content: flex-end;
         }
 
         .user-message .bubble {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+            background: #e0eafc; /* Light blue, subtle */
+            color: #333;
             padding: 12px 18px;
-            border-radius: 20px 20px 5px 20px;
-            display: inline-block;
-            max-width: 70%;
+            border-radius: 18px 18px 4px 18px; /* Modern bubble shape */
+            display: inline-block; /* Still inline-block for bubble sizing */
+            max-width: 75%; /* Slightly more width */
             word-wrap: break-word;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            font-size: 0.95em;
+        }
+
+        /* AI Message */
+        .ai-message {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px; /* Slightly more space between avatar and bubble */
         }
 
         .ai-message .bubble {
-            background: white;
+            background: #f0f4f8; /* Very light gray/blue */
             color: #333;
             padding: 12px 18px;
-            border-radius: 20px 20px 20px 5px;
+            border-radius: 18px 18px 18px 4px; /* Modern bubble shape */
             display: inline-block;
-            max-width: 80%;
+            max-width: 75%;
             word-wrap: break-word;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 4px solid #3498db;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            font-size: 0.95em;
         }
 
-        .input-container {
-            padding: 20px;
-            background: white;
-            border-top: 1px solid #eee;
+        /* Star Wrapper for consistent sizing and positioning */
+        .star-wrapper {
+            position: relative;
+            width: 32px; /* Slightly larger avatar */
+            height: 32px;
+            flex-shrink: 0;
+            margin-top: 2px; /* Adjust for text baseline */
             display: flex;
-            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* The actual star SVG container */
+        .ai-avatar {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Default for historical/idle stars */
+            animation: none; /* No animation by default */
+            filter: grayscale(80%) opacity(0.5); /* Dim for historical messages */
+            transition: all 0.3s ease-in-out;
+            transform: scale(0.9); /* Slightly smaller for historical messages */
+        }
+
+        .ai-avatar svg {
+            width: 100%;
+            height: 100%;
+            display: block; /* Remove extra space below SVG */
+        }
+
+        /* Star Animations (Gemini-like) for ACTIVE star */
+        .ai-message:last-of-type .star-wrapper .ai-avatar, /* Last AI message */
+        .typing-indicator .star-wrapper .ai-avatar { /* Typing indicator */
+            animation: idle-pulse 3s ease-in-out infinite; /* Only active star has idle pulse */
+            filter: drop-shadow(0 0 3px rgba(0,0,0,0.2)); /* Default subtle shadow */
+            transform: scale(1); /* Full size for active star */
+            opacity: 1; /* Full opacity */
+            filter: none; /* Reset filter if grayscale was applied */
+        }
+
+        @keyframes idle-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.9; filter: drop-shadow(0 0 3px rgba(0,0,0,0.2)); }
+            50% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 8px rgba(106, 130, 251, 0.6)); } /* More vibrant shadow on pulse */
+        }
+
+        @keyframes thinking-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(106, 130, 251, 0.8)) drop-shadow(0 0 16px rgba(106, 130, 251, 0.6)); }
+            50% { filter: drop-shadow(0 0 15px rgba(106, 130, 251, 1)) drop-shadow(0 0 25px rgba(106, 130, 251, 0.8)); }
+        }
+
+        @keyframes typing-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        /* Apply thinking and typing animations only when the specific class is present */
+        .star-wrapper.thinking .ai-avatar {
+            animation: thinking-spin 3s linear infinite, glow 1.5s ease-in-out infinite alternate;
+            transform: scale(1.1); /* Slightly larger when thinking */
+            filter: drop-shadow(0 0 8px rgba(106, 130, 251, 0.8)); /* Ensure glowing */
+        }
+
+        .star-wrapper.typing .ai-avatar {
+            animation: typing-bounce 0.6s ease-in-out infinite alternate;
+            transform: scale(1); /* Ensure normal size when typing */
+            filter: none; /* Remove glowing when typing */
+        }
+        
+        /* The welcome message logo should always be active and larger */
+        .welcome-message .star-wrapper.logo-large .ai-avatar {
+            animation: idle-pulse 3s ease-in-out infinite; /* Always idle pulse */
+            filter: none; /* No grayscale or dimming */
+            transform: scale(1); /* Full size */
+            opacity: 1; /* Full opacity */
+        }
+
+        .typing-text {
+            min-height: 20px; /* Ensure space for cursor */
+        }
+
+        .cursor {
+            display: inline-block;
+            background-color: #333; /* Cursor color matches text */
+            width: 2px;
+            height: 1em; /* Relative to font size */
+            animation: blink 1s infinite;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Input Area */
+        .input-container {
+            padding: 15px 20px; /* Generous padding */
+            background: #ffffff;
+            border-top: 1px solid #f0f0f0; /* Subtle border */
+            display: flex;
+            gap: 12px; /* Consistent spacing */
+            align-items: center;
+            position: relative;
+            z-index: 1;
         }
 
         .message-input {
             flex: 1;
-            padding: 12px 16px;
-            border: 2px solid #e1e8ed;
-            border-radius: 25px;
-            font-size: 16px;
+            padding: 14px 20px; /* Larger padding for better touch targets */
+            border: 1px solid #dcdfe4; /* Softer border */
+            border-radius: 28px; /* More rounded */
+            font-size: 1em;
             outline: none;
-            transition: border-color 0.3s;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            background: #f8f8f8; /* Slight background for input */
+            color: #333;
+        }
+
+        .message-input::placeholder {
+            color: #999;
         }
 
         .message-input:focus {
-            border-color: #3498db;
+            border-color: #6200EE; /* Focus color from Gemini palette */
+            box-shadow: 0 0 0 3px rgba(98, 0, 238, 0.2); /* Soft focus ring */
+            background: #fff;
         }
 
         .send-btn {
-            background: linear-gradient(135deg, #3498db, #2980b9);
+            background: linear-gradient(90deg, #6200EE 0%, #BB86FC 100%); /* Matching header gradient */
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
+            padding: 14px 28px; /* Larger button */
+            border-radius: 28px;
             cursor: pointer;
-            font-weight: bold;
-            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+            font-size: 1em;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.5px;
         }
 
         .send-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(98, 0, 238, 0.3);
         }
 
         .send-btn:disabled {
-            background: #bdc3c7;
+            background: #cad2da; /* Muted disabled color */
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+            opacity: 0.7;
         }
 
+        /* Controls Area */
         .controls {
-            padding: 10px 20px;
-            background: #ecf0f1;
-            border-top: 1px solid #ddd;
-            text-align: center;
+            padding: 12px 20px; /* Adjusted padding */
+            background: #f8f9fa; /* Lighter background */
+            border-top: 1px solid #eeeeee;
+            display: flex; /* Use flex for alignment */
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85em;
+            color: #666;
         }
 
         .clear-btn {
-            background: #e74c3c;
+            background: #ff7f7f; /* Softer red */
             color: white;
             border: none;
             padding: 8px 16px;
-            border-radius: 15px;
+            border-radius: 20px; /* More rounded */
             cursor: pointer;
-            font-size: 14px;
-            margin-right: 10px;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: background 0.2s ease;
         }
 
         .clear-btn:hover {
-            background: #c0392b;
+            background: #e65c5c;
         }
 
+        .controls small {
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        /* Typing Indicator */
         .typing-indicator {
             display: none;
-            text-align: left;
-            margin-bottom: 20px;
+            margin-bottom: 18px; /* Consistent spacing */
+            padding: 0 20px; /* Align with messages padding */
         }
 
-        .typing-indicator .bubble {
-            background: white;
-            padding: 12px 18px;
-            border-radius: 20px 20px 20px 5px;
-            display: inline-block;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 4px solid #3498db;
+        .typing-indicator .ai-message {
+            opacity: 0.8; /* Slightly subdued */
         }
 
         .dots {
-            display: inline-block;
+            font-size: 1.2em; /* Slightly larger dots */
+            line-height: 1;
+            color: #6200EE; /* Matches Gemini palette color */
         }
 
         .dots span {
             animation: typing 1.4s infinite;
-            opacity: 0;
+            opacity: 0.4;
+            display: inline-block;
+            margin-right: 2px;
         }
 
-        .dots span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .dots span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
+        .dots span:nth-child(1) { animation-delay: 0s; }
+        .dots span:nth-child(2) { animation-delay: 0.2s; }
+        .dots span:nth-child(3) { animation-delay: 0.4s; }
 
         @keyframes typing {
-            0%, 60%, 100% { opacity: 0; }
-            30% { opacity: 1; }
+            0%, 60%, 100% { opacity: 0.4; transform: translateY(0); }
+            30% { opacity: 1; transform: translateY(-2px); } /* Smaller bounce */
         }
 
+        /* Welcome Message */
         .welcome-message {
             text-align: center;
             color: #7f8c8d;
-            padding: 40px 20px;
+            padding: 50px 30px; /* More generous padding */
             font-style: italic;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%; /* Occupy full height */
         }
 
+        .welcome-message .star-wrapper.logo-large {
+            width: 70px; /* Larger welcome logo */
+            height: 70px;
+            margin: 0 auto 20px; /* More margin */
+        }
+
+        .welcome-message h3 {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .welcome-message p {
+            font-size: 1em;
+            color: #666;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* Scrollbar Styling (Webkit - Chrome, Safari) */
+        .messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .messages::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Responsive Adjustments */
         @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+
             .container {
                 height: 100vh;
                 border-radius: 0;
+                box-shadow: none;
             }
             
             .header h1 {
-                font-size: 1.8em;
+                font-size: 1.6em;
             }
             
+            .header p {
+                font-size: 0.9em;
+            }
+
             .user-message .bubble,
             .ai-message .bubble {
                 max-width: 90%;
+                font-size: 0.9em;
+            }
+
+            .messages {
+                padding: 15px;
+            }
+
+            .input-container {
+                padding: 12px 15px;
+                flex-wrap: wrap; /* Allow input and button to wrap */
+            }
+
+            .message-input {
+                padding: 12px 18px;
+                font-size: 0.95em;
+                width: 100%; /* Take full width on small screens */
+                margin-bottom: 8px; /* Space below input */
+            }
+
+            .send-btn {
+                padding: 12px 24px;
+                font-size: 0.95em;
+                width: 100%; /* Take full width */
+            }
+
+            .controls {
+                flex-direction: column;
+                gap: 8px;
+                padding: 10px 15px;
+            }
+
+            .clear-btn {
+                font-size: 0.8em;
+                padding: 7px 14px;
+            }
+            
+            .controls small {
+                text-align: center;
+            }
+
+            .star-wrapper {
+                width: 28px; /* Slightly smaller avatar on mobile */
+                height: 28px;
+            }
+
+            .welcome-message .star-wrapper.logo-large {
+                width: 60px;
+                height: 60px;
+                margin-bottom: 15px;
+            }
+
+            .welcome-message h3 {
+                font-size: 1.2em;
+            }
+
+            .welcome-message p {
+                font-size: 0.9em;
             }
         }
     </style>
@@ -237,18 +504,24 @@
         
         <div class="chat-container">
             <div class="messages" id="messages">
-                <div class="welcome-message">
-                    <h3>Welcome to your AI Career Counselor!</h3>
-                    <p>I'm here to help you with career guidance, job search strategies, resume advice, and more. How can I assist you today?</p>
                 </div>
-            </div>
             
             <div class="typing-indicator" id="typingIndicator">
-                <div class="bubble">
-                    <div class="dots">
-                        <span>●</span>
-                        <span>●</span>
-                        <span>●</span>
+                <div class="ai-message">
+                    <div class="star-wrapper">
+                        <div class="ai-avatar">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C12.5523 2 13 2.44772 13 3V11H21C21.5523 11 22 11.4477 22 12C22 12.5523 21.5523 13 21 13H13V21C13 21.5523 12.5523 22 12 22C11.4477 22 11 21.5523 11 21V13H3C2.44772 13 2 12.5523 2 12C2 11.4477 2.44772 11 3 11H11V3C11 2.44772 11.4477 2 12 2Z" fill="#BB86FC"/>
+                                <circle cx="12" cy="12" r="3" fill="#6200EE"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="bubble">
+                        <div class="dots">
+                            <span>●</span>
+                            <span>●</span>
+                            <span>●</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -272,84 +545,213 @@
         const clearBtn = document.getElementById('clearBtn');
         const typingIndicator = document.getElementById('typingIndicator');
 
-        function addMessage(text, isUser = false, isWelcome = false) {
-            if (isWelcome) {
-                // Remove welcome message when first real message is added
-                const welcomeMsg = document.querySelector('.welcome-message');
-                if (welcomeMsg) welcomeMsg.remove();
+        // SVG code for the Gemini-like star avatar
+        const geminiStarSVG = `
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C12.5523 2 13 2.44772 13 3V11H21C21.5523 11 22 11.4477 22 12C22 12.5523 21.5523 13 21 13H13V21C13 21.5523 12.5523 22 12 22C11.4477 22 11 21.5523 11 21V13H3C2.44772 13 2 12.5523 2 12C2 11.4477 2.44772 11 3 11H11V3C11 2.44772 11.4477 2 12 2Z" fill="#BB86FC"/>
+                <circle cx="12" cy="12" r="3" fill="#6200EE"/>
+            </svg>
+        `;
+
+        function setStarState(state) {
+            // Get all AI message star wrappers *within the messages container*
+            const allAiStars = messagesContainer.querySelectorAll('.ai-message .star-wrapper');
+            
+            allAiStars.forEach(wrapper => {
+                wrapper.classList.remove('thinking', 'typing');
+                const avatar = wrapper.querySelector('.ai-avatar');
+                if (avatar) {
+                    // Apply grayscale/dimming to all non-last AI avatars
+                    avatar.style.animation = 'none'; // Remove specific animations
+                    avatar.style.filter = 'grayscale(80%) opacity(0.5)';
+                    avatar.style.transform = 'scale(0.9)';
+                    avatar.style.opacity = '1'; // Keep opacity at 1 to let filter handle dimming
+                }
+            });
+
+            // Handle the typing indicator star separately
+            const typingIndicatorStar = typingIndicator.querySelector('.star-wrapper');
+            if (typingIndicatorStar) {
+                typingIndicatorStar.classList.remove('thinking', 'typing');
+                const avatar = typingIndicatorStar.querySelector('.ai-avatar');
+                 if (avatar) { 
+                    avatar.style.animation = 'idle-pulse 3s ease-in-out infinite'; // Typing indicator always pulses
+                    avatar.style.filter = 'none'; // No filter
+                    avatar.style.transform = 'scale(1)'; // Full size
+                    avatar.style.opacity = '1'; // Full opacity
+                }
+            }
+
+            // Apply the state only to the currently active star or typing indicator star
+            if (state === 'thinking') {
+                if (typingIndicatorStar) {
+                    typingIndicatorStar.classList.add('thinking');
+                }
+            } else if (state === 'typing') {
+                // Find the very last AI message's star, if it exists
+                const lastAiMessage = messagesContainer.querySelector('.ai-message:last-of-type');
+                if (lastAiMessage) {
+                    const lastStarWrapper = lastAiMessage.querySelector('.star-wrapper');
+                    if (lastStarWrapper) {
+                        lastStarWrapper.classList.add('typing');
+                        const avatar = lastStarWrapper.querySelector('.ai-avatar');
+                        if (avatar) { 
+                            avatar.style.animation = 'typing-bounce 0.6s ease-in-out infinite alternate'; // Typing specific animation
+                            avatar.style.filter = 'none'; 
+                            avatar.style.transform = 'scale(1)';
+                            avatar.style.opacity = '1';
+                        }
+                    }
+                }
+            }
+            // When state is 'idle' (e.g., after typing finishes or before thinking starts)
+            // ensure the *very last* AI message's star is active.
+            const currentLastAiMessage = messagesContainer.querySelector('.ai-message:last-of-type');
+            if (currentLastAiMessage && state === 'idle') {
+                const currentLastStarWrapper = currentLastAiMessage.querySelector('.star-wrapper');
+                if (currentLastStarWrapper) {
+                    const avatar = currentLastStarWrapper.querySelector('.ai-avatar');
+                    if (avatar) {
+                        avatar.style.animation = 'idle-pulse 3s ease-in-out infinite';
+                        avatar.style.filter = 'none';
+                        avatar.style.transform = 'scale(1)';
+                        avatar.style.opacity = '1';
+                    }
+                }
+            }
+        }
+
+        function addMessage(text, isUser = false) { // Removed isWelcome parameter as it's handled differently
+            // When adding a new message, immediately remove any existing welcome message
+            const welcomeMsg = document.querySelector('.welcome-message');
+            if (welcomeMsg) {
+                welcomeMsg.remove();
             }
 
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
             
-            const bubbleDiv = document.createElement('div');
-            bubbleDiv.className = 'bubble';
-            bubbleDiv.textContent = text;
+            if (isUser) {
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = 'bubble';
+                bubbleDiv.textContent = text;
+                messageDiv.appendChild(bubbleDiv);
+            } else {
+                const starWrapperDiv = document.createElement('div');
+                starWrapperDiv.className = 'star-wrapper';
+                starWrapperDiv.innerHTML = `<div class="ai-avatar">${geminiStarSVG}</div>`;
+                
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = 'bubble';
+                
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'typing-text';
+                
+                bubbleDiv.appendChild(typingDiv);
+                messageDiv.appendChild(starWrapperDiv);
+                messageDiv.appendChild(bubbleDiv);
+                
+                // For AI messages, we immediately set the state to idle to dim previous stars
+                setStarState('idle'); // This will apply the dimming to older stars
+
+                // For a NEW AI message, we want it to type
+                typeText(typingDiv, text); 
+            }
             
-            messageDiv.appendChild(bubbleDiv);
             messagesContainer.appendChild(messageDiv);
-            
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            return messageDiv;
+        }
+
+        function typeText(element, text, speed = 30) {
+            setStarState('typing'); // Sets typing state for the current (last) message's star
+            element.innerHTML = ''; 
+            
+            const cursorSpan = document.createElement('span');
+            cursorSpan.className = 'cursor';
+            element.appendChild(cursorSpan);
+
+            let i = 0;
+            
+            function type() {
+                if (i < text.length) {
+                    const charsToAdd = Math.min(Math.floor(Math.random() * 2) + 1, text.length - i);
+                    const textSegment = text.substring(i, i + charsToAdd);
+                    
+                    cursorSpan.insertAdjacentHTML('beforebegin', textSegment);
+                    i += charsToAdd;
+                    
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    
+                    setTimeout(type, speed);
+                } else {
+                    element.innerHTML = text; // Replace with full text once done
+                    setStarState('idle'); // After typing, set the star state back to idle (active pulse)
+                }
+            }
+            
+            setTimeout(type, 500); // Initial delay before typing starts
         }
 
         function showTypingIndicator() {
+            setStarState('thinking'); 
             typingIndicator.style.display = 'block';
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
         function hideTypingIndicator() {
             typingIndicator.style.display = 'none';
+            setStarState('idle'); // After hiding indicator, ensure the last AI message's star becomes active
         }
 
         async function sendMessage() {
             const message = messageInput.value.trim();
             if (!message) return;
 
-            // Add user message
-            addMessage(message, true, true);
+            addMessage(message, true); // User message
             messageInput.value = '';
             sendBtn.disabled = true;
             showTypingIndicator();
 
             try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ message: message })
-                });
+                const thinkingDelay = Math.random() * 1000 + 800; 
+                await new Promise(resolve => setTimeout(resolve, thinkingDelay));
 
-                const data = await response.json();
-                hideTypingIndicator();
+                hideTypingIndicator(); 
 
-                if (data.status === 'success') {
-                    addMessage(data.response);
-                } else {
-                    addMessage('Sorry, I encountered an error. Please try again.');
-                }
+                const actualResponse = "That's an excellent goal! To refine your career strategy, let's explore three key areas: 1) **Skill Alignment:** What specific skills do you possess that are transferable to your desired role or industry? 2) **Market Research:** What are the current demands and trends in that sector? 3) **Networking:** Who are the key professionals you should connect with? We can deep-dive into any of these, or perhaps start with a quick assessment of your core strengths.";
+
+                addMessage(actualResponse, false); // AI response (will type out)
+
+                sendBtn.disabled = false;
+                messageInput.focus();
+
             } catch (error) {
-                hideTypingIndicator();
-                addMessage('Sorry, I encountered a connection error. Please try again.');
+                setTimeout(() => {
+                    hideTypingIndicator();
+                    setStarState('idle');
+                    addMessage('Oops! It seems I lost my connection. Please try sending your message again.', false);
+                    sendBtn.disabled = false;
+                    messageInput.focus();
+                }, 1000);
             }
-
-            sendBtn.disabled = false;
-            messageInput.focus();
         }
 
         async function clearChat() {
             if (confirm('Are you sure you want to clear the chat history?')) {
-                try {
-                    await fetch('/api/clear');
-                    messagesContainer.innerHTML = `
-                        <div class="welcome-message">
-                            <h3>Welcome to your AI Career Counselor!</h3>
-                            <p>I'm here to help you with career guidance, job search strategies, resume advice, and more. How can I assist you today?</p>
+                messagesContainer.innerHTML = ''; // Clear all messages
+                // Re-add the welcome message
+                messagesContainer.innerHTML = `
+                    <div class="welcome-message">
+                        <div class="star-wrapper logo-large">
+                            <div class="ai-avatar">${geminiStarSVG}</div>
                         </div>
-                    `;
-                } catch (error) {
-                    console.error('Error clearing chat:', error);
-                }
+                        <h3>Welcome to your AI Career Counselor!</h3>
+                        <p>I'm here to help you with career guidance, job search strategies, resume advice, and more. How can I assist you today?</p>
+                    </div>
+                `;
+                setStarState('idle'); // Reset star state after clearing chat
             }
         }
 
@@ -363,33 +765,23 @@
             }
         });
 
-        // Focus on input when page loads
-        messageInput.focus();
-
-        // Load chat history on page load
-        async function loadHistory() {
-            try {
-                const response = await fetch('/api/history');
-                const data = await response.json();
-                
-                if (data.messages && data.messages.length > 0) {
-                    // Remove welcome message
-                    const welcomeMsg = document.querySelector('.welcome-message');
-                    if (welcomeMsg) welcomeMsg.remove();
-                    
-                    // Add historical messages
-                    data.messages.forEach(msg => {
-                        addMessage(msg.user, true);
-                        addMessage(msg.ai);
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading history:', error);
-            }
+        // Initialize chat with ONLY the welcome message
+        function initializeChat() {
+            messagesContainer.innerHTML = `
+                <div class="welcome-message">
+                    <div class="star-wrapper logo-large">
+                        <div class="ai-avatar">${geminiStarSVG}</div>
+                    </div>
+                    <h3>Welcome to your AI Career Counselor!</h3>
+                    <p>I'm here to help you with career guidance, job search strategies, resume advice, and more. How can I assist you today?</p>
+                </div>
+            `;
+            setStarState('idle'); // Ensure the welcome message star is active
+            messageInput.focus(); // Focus input
         }
 
-        // Load history on page load
-        loadHistory();
+        // Call the initialization function when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', initializeChat);
     </script>
 </body>
 </html>
