@@ -356,7 +356,7 @@
             cursor: pointer;
             font-weight: 600;
             font-size: 1em;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, background 0.3s ease; /* Added background to transition */
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             letter-spacing: 0.5px;
         }
@@ -373,6 +373,18 @@
             box-shadow: none;
             opacity: 0.7;
         }
+
+        /* New style for 'Stop' button state */
+        .send-btn.stop-state {
+            background: #ff4d4f; /* A red color for stop */
+            box-shadow: 0 4px 8px rgba(255, 77, 79, 0.3);
+        }
+
+        .send-btn.stop-state:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(255, 77, 79, 0.5);
+        }
+
 
         /* Controls Area */
         .controls {
@@ -563,10 +575,8 @@
         </div>
         
         <div class="chat-container">
-            <!-- Welcome message, now a sibling of messages and positioned absolutely -->
             <div class="welcome-message" id="welcomeMessage">
-                <div class="star-wrapper logo-large visible" id="welcomeStar"> <!-- Added 'id="welcomeStar"' here -->
-                    <div class="ai-avatar">
+                <div class="star-wrapper logo-large visible" id="welcomeStar"> <div class="ai-avatar">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C12.5523 2 13 2.44772 13 3V11H21C21.5523 11 22 11.4477 22 12C22 12.5523 21.5523 13 21 13H13V21C13 21.5523 12.5523 22 12 22C11.4477 22 11 21.5523 11 21V13H3C2.44772 13 2 12.5523 2 12C2 11.4477 2.44772 11 3 11H11V3C11 2.44772 11.4477 2 12 2Z" fill="#BB86FC"/>
                             <circle cx="12" cy="12" r="3" fill="#6200EE"/>
@@ -578,8 +588,7 @@
             </div>
 
             <div class="messages" id="messages">
-                <!-- Chat messages will be dynamically added here -->
-            </div>
+                </div>
             
         </div>
         
@@ -606,6 +615,7 @@
         let isTyping = false; // True when the AI is actively typing
         let userScrolledUp = false; // True if the user has manually scrolled up
         let typingTimer = null; // Timer for the typing animation
+        let messageQueue = []; // Queue for messages to be processed
 
         // SVG code for the Gemini-like star avatar
         const geminiStarSVG = `
@@ -764,6 +774,9 @@
                 setStarAnimationState(starWrapper, 'typing'); // Apply typing animation state
             }
 
+            // Immediately update the button state to "Stop" when typing starts
+            updateSendButtonState();
+
             element.innerHTML = ''; // Clear existing content
             
             // Add a blinking cursor
@@ -777,6 +790,16 @@
 
             function type() {
                 if (i < text.length) {
+                    // Check if typing was externally stopped
+                    if (!isTyping) { // If isTyping was set to false by a 'Stop' click
+                        element.innerHTML = text.substring(0, i); // Finalize with what was typed so far
+                        if (starWrapper) {
+                            setStarAnimationState(starWrapper, 'active'); // Set star to active idle
+                        }
+                        updateSendButtonState(); // Update button to 'Send'
+                        return; // Stop typing
+                    }
+
                     const charsToAdd = Math.min(Math.floor(Math.random() * 2) + 1, text.length - i); // Type 1-2 chars at a time
                     const textSegment = text.substring(i, i + charsToAdd);
                     
@@ -814,11 +837,10 @@
                     if (starWrapper) {
                         setStarAnimationState(starWrapper, 'active');
                     } else {
-                        // This case should ideally not happen for AI message stars
-                        // unless there's an error in logic or HTML structure.
-                        // It serves as a fallback.
                         console.warn("Star wrapper not found after typing completed.");
                     }
+                    processQueue(); // Process next message in queue
+                    updateSendButtonState(); // Update button to 'Send' after typing completes or queue is processed
                 }
             }
             
@@ -830,12 +852,67 @@
          * Handles sending a message to the backend.
          */
         async function sendMessage() {
+            // If AI is currently typing, this click is a 'Stop' command
+            if (isTyping) {
+                // Stop the typing animation immediately
+                if (typingTimer) {
+                    clearTimeout(typingTimer);
+                    typingTimer = null;
+                }
+                isTyping = false; // Set typing status to false
+                messageQueue = []; // Clear the queue if stop is pressed
+
+                // Find the last AI message and ensure its content is finalized
+                const lastAiMessage = messagesContainer.querySelector('.ai-message:last-child');
+                if (lastAiMessage) {
+                    const typingDiv = lastAiMessage.querySelector('.typing-text');
+                    const starWrapper = lastAiMessage.querySelector('.star-wrapper');
+                    if (typingDiv && starWrapper) {
+                        // Remove cursor and set current content (it might be partial)
+                        typingDiv.innerHTML = typingDiv.textContent; // Finalize the typed content
+                        setStarAnimationState(starWrapper, 'active'); // Set star to active idle
+                    }
+                }
+                
+                updateSendButtonState(); // Update button to 'Send'
+                return; // Do not proceed with sending a new message
+            }
+
             const message = messageInput.value.trim();
             if (!message) return; // Don't send empty messages
 
-            addMessage(message, true); // Add user message to display
+            // Add user message to display immediately
+            addMessage(message, true); 
             messageInput.value = ''; // Clear input field
-            sendBtn.disabled = true; // Disable send button while waiting for response
+
+            // Enqueue the message
+            messageQueue.push(message);
+
+            // If not currently typing, start processing the queue
+            if (!isTyping) { 
+                processQueue();
+            } else {
+                // This path implies the user just pressed Enter while something was already processing or typing.
+                // The `updateSendButtonState` will keep the button disabled and say 'Wait...'
+                updateSendButtonState(); 
+            }
+        }
+
+        /**
+         * Processes messages from the queue.
+         */
+        async function processQueue() {
+            if (messageQueue.length === 0 || isTyping) { // If AI is typing, don't start new processing
+                updateSendButtonState();
+                return;
+            }
+
+            const messageToProcess = messageQueue.shift(); // Get the next message from the queue
+
+            // Indicate processing state
+            sendBtn.disabled = true; // Disable button while processing
+            sendBtn.textContent = 'Processing...';
+            sendBtn.classList.remove('stop-state'); // Ensure original styling
 
             // Add AI message placeholder, which now includes the loader, and set loader visible
             const aiMessageElements = addMessage('', false);
@@ -849,7 +926,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ message: messageToProcess }) // Send the queued message
                 });
 
                 if (!response.ok) {
@@ -859,16 +936,14 @@
                 const data = await response.json();
                 let actualResponse = data.response;
                 
-                // Remove the initial prompt from the AI response if it's accidentally included
-                const promptPrefix = "As a professional AI Career Counselor with expertise in: - Career guidance and planning - Resume and interview advice - Industry trends and job market insights - Skills development recommendations - Career transition strategies - Professional networking guidance - Salary negotiation tips - Work-life balance advice Always provide helpful, supportive, and actionable career advice. Ask clarifying questions to better understand the user's situation, goals, and background. Be encouraging while remaining realistic about career prospects and challenges. Start conversations by introducing yourself and asking how I can help with their career journey today.";
+                const promptPrefix = "You are a professional AI Career Counselor called Star with expertise in: - Career guidance and planning - Resume and interview advice - Industry trends and job market insights - Skills development recommendations - Career transition strategies - Professional networking guidance - Salary negotiation tips - Work-life balance advice Always provide helpful, supportive, and actionable career advice. Ask clarifying questions to better understand the user's situation, goals, and background. Be encouraging while remaining realistic about career prospects and challenges. Start conversations by introducing yourself and asking how you can help with their career journey today.";
                 if (actualResponse.startsWith(promptPrefix)) {
                     actualResponse = actualResponse.substring(promptPrefix.length).trim();
                 }
 
                 // Start typing into the existing placeholder, which will trigger the loader-to-star transition
+                // This call to typeText will set isTyping to true and update the button to 'Stop'
                 typeText(typingDiv, actualResponse, aiStarWrapper, geminiLoaderWrapper); 
-                sendBtn.disabled = false; // Re-enable send button
-                messageInput.focus(); // Focus input for next message
 
             } catch (error) {
                 console.error('Error sending message:', error);
@@ -882,9 +957,39 @@
                     aiStarWrapper.classList.add('visible', 'historical'); // Show star, but in a muted state for error
                 }
                 typingDiv.textContent = "Oops! Something went wrong. Please try again later.";
-                sendBtn.disabled = false; // Re-enable send button
+                isTyping = false; // Ensure typing is false on error
+                messageQueue = []; // Clear queue on error
+                updateSendButtonState(); // Update button state
+            } 
+        }
+
+        /**
+         * Updates the state of the send button based on input and typing status.
+         */
+        function updateSendButtonState() {
+            if (isTyping) { // If AI is currently typing
+                sendBtn.disabled = false; // Always enabled for stop action
+                sendBtn.textContent = 'Stop';
+                sendBtn.classList.add('stop-state'); // Apply red styling
+                messageInput.focus();
+            } else if (messageQueue.length > 0) { // If there are messages in the queue waiting to be processed
+                sendBtn.disabled = true;
+                sendBtn.textContent = 'Wait...';
+                sendBtn.classList.remove('stop-state'); // Ensure original styling
+                messageInput.focus();
+            } else if (messageInput.value.trim().length > 0) { // If input has text and no typing/queue
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+                sendBtn.classList.remove('stop-state'); // Ensure original styling
+                messageInput.focus();
+            } else { // If input is empty and no typing/queue
+                sendBtn.disabled = true;
+                sendBtn.textContent = 'Send';
+                sendBtn.classList.remove('stop-state'); // Ensure original styling
+                messageInput.focus();
             }
         }
+
 
         /**
          * Loads chat history from the backend.
@@ -942,9 +1047,7 @@
                         aiBubble.textContent = msg.ai;
 
                         aiAvatarContainer.appendChild(geminiLoaderWrapper);
-                        aiAvatarContainer.appendChild(starWrapperDiv);
-
-                        aiMsgDiv.appendChild(aiAvatarContainer);
+                        aiMsgDiv.appendChild(aiAvatarContainer); // Add the container to the message
                         aiMsgDiv.appendChild(aiBubble);
                         messagesContainer.appendChild(aiMsgDiv);
                     });
@@ -953,7 +1056,7 @@
                 } else {
                     // If no history, ensure welcome message is visible and its star is animated
                     if (welcomeMessageDiv) {
-                        welcomeMessageDiv.classList.remove('hidden'); // Ensure it's displayed
+                        welcomeMessageDiv.classList.remove('hidden');
                         // Directly activate welcome star
                         if (welcomeStar) {
                             welcomeStar.classList.add('visible', 'active');
@@ -969,6 +1072,8 @@
                         welcomeStar.classList.add('visible', 'active');
                     }
                 }
+            } finally {
+                updateSendButtonState(); // Ensure button state is correct after history load
             }
         }
 
@@ -977,6 +1082,14 @@
          */
         async function clearChat() {
             try {
+                // Stop any ongoing typing animation and clear the queue
+                if (typingTimer) {
+                    clearTimeout(typingTimer);
+                    typingTimer = null;
+                }
+                isTyping = false;
+                messageQueue = [];
+
                 const response = await fetch('/api/clear');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -996,27 +1109,28 @@
             } catch (error) {
                 console.error('Error clearing chat:', error);
                 // Optionally inform user about error
+            } finally {
+                updateSendButtonState(); // Ensure button state is correct after clearing
             }
         }
 
         // Event Listeners
         sendBtn.addEventListener('click', sendMessage);
         messageInput.addEventListener('keypress', (e) => {
+            // Check if Enter is pressed and the button is not disabled (which it won't be if it's 'Stop')
             if (e.key === 'Enter' && !sendBtn.disabled) {
                 sendMessage();
             }
         });
-        messageInput.addEventListener('input', () => {
-            // Enable send button only if input is not empty
-            sendBtn.disabled = messageInput.value.trim().length === 0;
-        });
+        messageInput.addEventListener('input', updateSendButtonState); // Update button state on input change
+
         clearBtn.addEventListener('click', clearChat);
 
         // Initial setup on page load
         document.addEventListener('DOMContentLoaded', async () => {
             await clearChat(); // Clear chat history on every load
             await loadHistory(); // Then load history (will be empty, showing welcome)
-            sendBtn.disabled = true; // Disable send button initially
+            // Initial button state is set by updateSendButtonState called in loadHistory/clearChat
         });
 
     </script>
