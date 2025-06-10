@@ -69,7 +69,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            position: relative;
+            position: relative; /* Important for absolute positioning of welcome message */
         }
 
         .messages {
@@ -116,43 +116,49 @@
             gap: 12px; /* Slightly more space between avatar and bubble */
         }
 
-        .ai-message .bubble {
-            background: #f0f4f8; /* Very light gray/blue */
-            color: #333;
-            padding: 12px 18px;
-            border-radius: 18px 18px 18px 4px; /* Modern bubble shape */
-            display: inline-block;
-            max-width: 75%;
-            word-wrap: break-word;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            font-size: 0.95em;
-        }
-
-        /* Star Wrapper for consistent sizing and positioning */
-        .star-wrapper {
+        /* New container for the overlapping avatar and loader */
+        .ai-avatar-container {
             position: relative;
-            width: 32px; /* Slightly larger avatar */
+            width: 32px; /* Fixed size for both avatar and loader */
             height: 32px;
             flex-shrink: 0;
             margin-top: 2px; /* Adjust for text baseline */
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: all 0.3s ease-in-out;
+        }
+
+        /* Star Wrapper for consistent sizing and positioning */
+        .star-wrapper, .gemini-loader-wrapper {
+            position: absolute; /* Overlap within ai-avatar-container */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Transition for visibility and opacity changes */
+            transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s; 
+            /* Start hidden by default, unless .visible is applied */
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .star-wrapper.visible, .gemini-loader-wrapper.visible {
+            opacity: 1;
+            visibility: visible;
+            transition-delay: 0s; /* Show immediately when .visible is added */
         }
 
         /* The actual star SVG container */
         .ai-avatar {
             width: 100%;
             height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            /* Default for historical/idle stars */
-            animation: none; /* No animation by default */
-            filter: grayscale(80%) opacity(0.5); /* Dim for historical messages */
-            transition: all 0.3s ease-in-out;
-            transform: scale(0.9); /* Slightly smaller for historical messages */
+            display: block; /* Remove extra space below SVG */
+            /* Smooth transitions for transform/filter changes within animation states */
+            transition: transform 0.3s ease-in-out, filter 0.3s ease-in-out; 
+            position: relative;
         }
 
         .ai-avatar svg {
@@ -161,56 +167,132 @@
             display: block; /* Remove extra space below SVG */
         }
 
-        /* Star Animations (Gemini-like) for ACTIVE star */
-        .ai-message:last-of-type .star-wrapper .ai-avatar, /* Last AI message */
-        .typing-indicator .star-wrapper .ai-avatar { /* Typing indicator */
-            animation: idle-pulse 3s ease-in-out infinite; /* Only active star has idle pulse */
-            filter: drop-shadow(0 0 3px rgba(0,0,0,0.2)); /* Default subtle shadow */
-            transform: scale(1); /* Full size for active star */
-            opacity: 1; /* Full opacity */
-            filter: none; /* Reset filter if grayscale was applied */
+        /* Enhanced Star Animations */
+        
+        /* Idle pulse animation for active stars */
+        @keyframes enhanced-idle-pulse {
+            0% { 
+                transform: scale(1) rotate(0deg); 
+                filter: drop-shadow(0 0 4px rgba(98, 0, 238, 0.3)); 
+            }
+            25% { 
+                transform: scale(1.03) rotate(3deg); 
+                filter: drop-shadow(0 0 8px rgba(187, 134, 252, 0.5)); 
+            }
+            50% { 
+                transform: scale(1.05) rotate(0deg); 
+                filter: drop-shadow(0 0 12px rgba(98, 0, 238, 0.7)); 
+            }
+            75% { 
+                transform: scale(1.03) rotate(-3deg); 
+                filter: drop-shadow(0 0 8px rgba(187, 134, 252, 0.5)); 
+            }
+            100% { 
+                transform: scale(1) rotate(0deg); 
+                filter: drop-shadow(0 0 4px rgba(98, 0, 238, 0.3)); 
+            }
         }
 
-        @keyframes idle-pulse {
-            0%, 100% { transform: scale(1); opacity: 0.9; filter: drop-shadow(0 0 3px rgba(0,0,0,0.2)); }
-            50% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 8px rgba(106, 130, 251, 0.6)); } /* More vibrant shadow on pulse */
+        /* Thinking animation with orbital particles (star-based) */
+        @keyframes thinking-rotation {
+            0% { transform: rotate(0deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1.1); }
         }
 
-        @keyframes thinking-spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes thinking-glow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 8px rgba(98, 0, 238, 0.8)) 
+                        drop-shadow(0 0 16px rgba(187, 134, 252, 0.6)) 
+                        drop-shadow(0 0 24px rgba(98, 0, 238, 0.4)); 
+            }
+            50% { 
+                filter: drop-shadow(0 0 12px rgba(98, 0, 238, 1)) 
+                        drop-shadow(0 0 24px rgba(187, 134, 252, 0.8)) 
+                        drop-shadow(0 0 36px rgba(98, 0, 238, 0.6)); 
+            }
         }
 
-        @keyframes glow {
-            0%, 100% { filter: drop-shadow(0 0 8px rgba(106, 130, 251, 0.8)) drop-shadow(0 0 16px rgba(106, 130, 251, 0.6)); }
-            50% { filter: drop-shadow(0 0 15px rgba(106, 130, 251, 1)) drop-shadow(0 0 25px rgba(106, 130, 251, 0.8)); }
+        /* Particle orbit animation */
+        @keyframes particle-orbit {
+            0% { transform: translate(-50%, -50%) rotate(0deg) translateX(12px); } /* Smaller radius for welcome star particles */
+            100% { transform: translate(-50%, -50%) rotate(360deg) translateX(12px); }
         }
 
+        @keyframes particle-orbit-reverse {
+            0% { transform: translate(-50%, -50%) rotate(0deg) translateX(8px); } /* Smaller radius for welcome star particles */
+            100% { transform: translate(-50%, -50%) rotate(-360deg) translateX(8px); }
+        }
+
+        /* Typing bounce and spin animation with glow */
         @keyframes typing-bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
+            0% { transform: translateY(0) scale(1) rotate(0deg); filter: drop-shadow(0 0 4px rgba(98, 0, 238, 0.3)); }
+            25% { transform: translateY(-2px) scale(1.02) rotate(90deg); filter: drop-shadow(0 0 8px rgba(187, 134, 252, 0.5)); }
+            50% { transform: translateY(-4px) scale(1.05) rotate(180deg); filter: drop-shadow(0 0 12px rgba(98, 0, 238, 0.7)); }
+            75% { transform: translateY(-2px) scale(1.02) rotate(270deg); filter: drop-shadow(0 0 8px rgba(187, 134, 252, 0.5)); }
+            100% { transform: translateY(0) scale(1) rotate(360deg); filter: drop-shadow(0 0 4px rgba(98, 0, 238, 0.3)); }
         }
 
-        /* Apply thinking and typing animations only when the specific class is present */
+        /* Star state classes */
+        .star-wrapper.active .ai-avatar {
+            animation: enhanced-idle-pulse 4s ease-in-out infinite;
+        }
+
         .star-wrapper.thinking .ai-avatar {
-            animation: thinking-spin 3s linear infinite, glow 1.5s ease-in-out infinite alternate;
-            transform: scale(1.1); /* Slightly larger when thinking */
-            filter: drop-shadow(0 0 8px rgba(106, 130, 251, 0.8)); /* Ensure glowing */
+            animation: thinking-rotation 2.5s linear infinite, thinking-glow 2s ease-in-out infinite alternate; /* Slower thinking animation */
+            position: relative;
+        }
+
+        .star-wrapper.thinking .ai-avatar::before,
+        .star-wrapper.thinking .ai-avatar::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: radial-gradient(circle, #BB86FC 0%, #6200EE 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(187, 134, 252, 0.8);
+            /* Center the particle within the avatar, then let keyframes handle orbit */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Initial centering */
+        }
+
+        .star-wrapper.thinking .ai-avatar::before {
+            animation: particle-orbit 3.5s linear infinite; /* Slower particle orbit */
+        }
+
+        .star-wrapper.thinking .ai-avatar::after {
+            animation: particle-orbit-reverse 3s linear infinite; /* Slower particle orbit */
         }
 
         .star-wrapper.typing .ai-avatar {
-            animation: typing-bounce 0.6s ease-in-out infinite alternate;
-            transform: scale(1); /* Ensure normal size when typing */
-            filter: none; /* Remove glowing when typing */
+            animation: typing-bounce 1.5s ease-in-out infinite; /* Made typing animation slower */
         }
-        
-        /* The welcome message logo should always be active and larger */
-        .welcome-message .star-wrapper.logo-large .ai-avatar {
-            animation: idle-pulse 3s ease-in-out infinite; /* Always idle pulse */
-            filter: none; /* No grayscale or dimming */
-            transform: scale(1); /* Full size */
-            opacity: 1; /* Full opacity */
+
+        /* Historical messages: dim and smaller */
+        .star-wrapper.historical .ai-avatar {
+            animation: none;
+            filter: grayscale(60%) opacity(0.6);
+            transform: scale(0.9);
         }
+
+        /* Welcome message large star */
+        .welcome-message .star-wrapper.logo-large {
+            width: 70px; /* Larger welcome logo */
+            height: 70px;
+            margin: 0 auto 20px; /* More margin */
+            position: static; /* OVERRIDE absolute positioning to make it a flex item */
+            /* Ensure it's fully visible and interactive regardless of generic .star-wrapper styles */
+            opacity: 1; 
+            visibility: visible;
+            transition: none; /* No transition for this specific static element */
+        }
+        /* Ensure the welcome message's star is also visible by default HTML structure */
+        .welcome-message .star-wrapper.logo-large.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
 
         .typing-text {
             min-height: 20px; /* Ensure space for cursor */
@@ -325,90 +407,29 @@
             font-style: italic;
         }
 
-        /* Typing Indicator */
-        .typing-indicator {
-            display: none;
-            margin-bottom: 18px; /* Consistent spacing */
-            padding: 0 20px; /* Align with messages padding */
-        }
-
-        .typing-indicator .ai-message {
-            opacity: 0.8; /* Slightly subdued */
-        }
-
-        .dots {
-            font-size: 1.2em; /* Slightly larger dots */
-            line-height: 1;
-            color: #6200EE; /* Matches Gemini palette color */
-        }
-
-        .dots span {
-            animation: typing 1.4s infinite;
-            opacity: 0.4;
-            display: inline-block;
-            margin-right: 2px;
-        }
-
-        .dots span:nth-child(1) { animation-delay: 0s; }
-        .dots span:nth-child(2) { animation-delay: 0.2s; }
-        .dots span:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes typing {
-            0%, 60%, 100% { opacity: 0.4; transform: translateY(0); }
-            30% { opacity: 1; transform: translateY(-2px); } /* Smaller bounce */
-        }
-
         /* Welcome Message */
         .welcome-message {
             text-align: center;
             color: #7f8c8d;
             padding: 50px 30px; /* More generous padding */
             font-style: italic;
-            display: flex;
+            display: flex; /* Ensures flex properties for centering */
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%; /* Occupy full height */
+            height: 100%; /* Occupy full height of parent container */
+            width: 100%; /* Occupy full width of parent container */
+            position: absolute; /* Overlay messages content */
+            top: 0;
+            left: 0;
+            background: #fdfdfd; /* Match messages background for seamless overlay */
+            z-index: 2; /* Ensure it's above messages but below input/header */
+            transition: opacity 0.3s ease-out; /* Smooth fade out */
         }
 
-        .welcome-message .star-wrapper.logo-large {
-            width: 70px; /* Larger welcome logo */
-            height: 70px;
-            margin: 0 auto 20px; /* More margin */
-        }
-
-        .welcome-message h3 {
-            font-size: 1.4em;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 10px;
-        }
-
-        .welcome-message p {
-            font-size: 1em;
-            color: #666;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        /* Scrollbar Styling (Webkit - Chrome, Safari) */
-        .messages::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .messages::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-
-        .messages::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-            transition: background 0.3s ease;
-        }
-
-        .messages::-webkit-scrollbar-thumb:hover {
-            background: #555;
+        .welcome-message.hidden {
+            opacity: 0;
+            pointer-events: none; /* Make it unclickable when hidden */
         }
 
         /* Responsive Adjustments */
@@ -474,7 +495,7 @@
                 text-align: center;
             }
 
-            .star-wrapper {
+            .star-wrapper, .gemini-loader-wrapper {
                 width: 28px; /* Slightly smaller avatar on mobile */
                 height: 28px;
             }
@@ -493,6 +514,45 @@
                 font-size: 0.9em;
             }
         }
+
+        /* Gemini Loader Styles */
+        /* .gemini-loader-wrapper is now contained within ai-avatar-container */
+        .gemini-loader {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .gemini-loader span {
+            position: absolute;
+            width: 6px; /* Dot size */
+            height: 6px;
+            background-color: #6200EE; /* Dot color */
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Center dot initially */
+            opacity: 0; /* Initially hidden */
+            animation: gemini-dot-orbit 2s ease-in-out infinite, gemini-dot-fade 2s ease-in-out infinite;
+        }
+
+        .gemini-loader span:nth-child(1) { animation-delay: 0s, 0s; }
+        .gemini-loader span:nth-child(2) { animation-delay: 0.66s, 0.66s; }
+        .gemini-loader span:nth-child(3) { animation-delay: 1.32s, 1.32s; }
+
+        @keyframes gemini-dot-orbit {
+            0% { transform: translate(-50%, -50%) rotate(0deg) translateX(12px) scale(0.5); opacity: 0; }
+            20% { opacity: 1; transform: translate(-50%, -50%) rotate(72deg) translateX(12px) scale(1); }
+            40% { transform: translate(-50%, -50%) rotate(144deg) translateX(12px); }
+            60% { transform: translate(-50%, -50%) rotate(216deg) translateX(12px); }
+            80% { transform: translate(-50%, -50%) rotate(288deg) translateX(12px) scale(0.5); }
+            100% { transform: translate(-50%, -50%) rotate(360deg) translateX(12px) scale(0); opacity: 0; }
+        }
+
+        @keyframes gemini-dot-fade {
+            0%, 100% { opacity: 0; }
+            20%, 80% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -503,28 +563,24 @@
         </div>
         
         <div class="chat-container">
-            <div class="messages" id="messages">
-                </div>
-            
-            <div class="typing-indicator" id="typingIndicator">
-                <div class="ai-message">
-                    <div class="star-wrapper">
-                        <div class="ai-avatar">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C12.5523 2 13 2.44772 13 3V11H21C21.5523 11 22 11.4477 22 12C22 12.5523 21.5523 13 21 13H13V21C13 21.5523 12.5523 22 12 22C11.4477 22 11 21.5523 11 21V13H3C2.44772 13 2 12.5523 2 12C2 11.4477 2.44772 11 3 11H11V3C11 2.44772 11.4477 2 12 2Z" fill="#BB86FC"/>
-                                <circle cx="12" cy="12" r="3" fill="#6200EE"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="bubble">
-                        <div class="dots">
-                            <span>●</span>
-                            <span>●</span>
-                            <span>●</span>
-                        </div>
+            <!-- Welcome message, now a sibling of messages and positioned absolutely -->
+            <div class="welcome-message" id="welcomeMessage">
+                <div class="star-wrapper logo-large visible" id="welcomeStar"> <!-- Added 'id="welcomeStar"' here -->
+                    <div class="ai-avatar">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C12.5523 2 13 2.44772 13 3V11H21C21.5523 11 22 11.4477 22 12C22 12.5523 21.5523 13 21 13H13V21C13 21.5523 12.5523 22 12 22C11.4477 22 11 21.5523 11 21V13H3C2.44772 13 2 12.5523 2 12C2 11.4477 2.44772 11 3 11H11V3C11 2.44772 11.4477 2 12 2Z" fill="#BB86FC"/>
+                            <circle cx="12" cy="12" r="3" fill="#6200EE"/>
+                        </svg>
                     </div>
                 </div>
+                <h3>Welcome to your AI Career Counselor!</h3>
+                <p>I'm here to help you navigate your career path. Ask me anything about career guidance, resume tips, job market insights, and more!</p>
             </div>
+
+            <div class="messages" id="messages">
+                <!-- Chat messages will be dynamically added here -->
+            </div>
+            
         </div>
         
         <div class="input-container">
@@ -543,7 +599,13 @@
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         const clearBtn = document.getElementById('clearBtn');
-        const typingIndicator = document.getElementById('typingIndicator');
+        const welcomeMessageDiv = document.getElementById('welcomeMessage');
+        const welcomeStar = document.getElementById('welcomeStar'); // Get reference to the welcome star
+
+        // State variables for scrolling and typing
+        let isTyping = false; // True when the AI is actively typing
+        let userScrolledUp = false; // True if the user has manually scrolled up
+        let typingTimer = null; // Timer for the typing animation
 
         // SVG code for the Gemini-like star avatar
         const geminiStarSVG = `
@@ -553,79 +615,79 @@
             </svg>
         `;
 
-        function setStarState(state) {
-            // Get all AI message star wrappers *within the messages container*
-            const allAiStars = messagesContainer.querySelectorAll('.ai-message .star-wrapper');
-            
-            allAiStars.forEach(wrapper => {
-                wrapper.classList.remove('thinking', 'typing');
-                const avatar = wrapper.querySelector('.ai-avatar');
-                if (avatar) {
-                    // Apply grayscale/dimming to all non-last AI avatars
-                    avatar.style.animation = 'none'; // Remove specific animations
-                    avatar.style.filter = 'grayscale(80%) opacity(0.5)';
-                    avatar.style.transform = 'scale(0.9)';
-                    avatar.style.opacity = '1'; // Keep opacity at 1 to let filter handle dimming
+        /**
+         * Checks if the user's scroll position is near the bottom of the messages container.
+         * @returns {boolean} True if near bottom, false otherwise.
+         */
+        function isNearBottom() {
+            const tolerance = 50; // pixels from bottom to consider "near"
+            return messagesContainer.scrollTop + messagesContainer.clientHeight >= messagesContainer.scrollHeight - tolerance;
+        }
+
+        /**
+         * Event listener for messages container scroll.
+         * Updates `userScrolledUp` based on scroll position.
+         */
+        messagesContainer.addEventListener('scroll', () => {
+            // Only update userScrolledUp if AI is currently typing 
+            if (isTyping) { 
+                userScrolledUp = !isNearBottom();
+            } else {
+                userScrolledUp = !isNearBottom();
+            }
+        });
+
+        /**
+         * Manages the animation state classes for star avatars.
+         * Sets historical state for previous AI messages, and specific states for active/typing/thinking stars.
+         * This function now expects to be called on a specific starWrapper element directly,
+         * or it will iterate through all and apply historical.
+         * @param {HTMLElement} targetStarWrapper - The specific .star-wrapper element to animate, or null to only update historical.
+         * @param {string} state - The desired state ('active', 'typing', 'thinking', 'historical').
+         */
+        function setStarAnimationState(targetStarWrapper, state) {
+            // Clear all animation classes from all stars, but preserve logo-large
+            const allStarWrappers = document.querySelectorAll('.star-wrapper');
+            allStarWrappers.forEach(wrapper => {
+                // Keep 'logo-large' if it exists, remove other state classes
+                if (wrapper.classList.contains('logo-large')) {
+                    wrapper.classList.remove('active', 'typing', 'thinking', 'historical');
+                } else {
+                    wrapper.classList.remove('active', 'typing', 'thinking', 'historical', 'logo-large');
                 }
             });
 
-            // Handle the typing indicator star separately
-            const typingIndicatorStar = typingIndicator.querySelector('.star-wrapper');
-            if (typingIndicatorStar) {
-                typingIndicatorStar.classList.remove('thinking', 'typing');
-                const avatar = typingIndicatorStar.querySelector('.ai-avatar');
-                 if (avatar) { 
-                    avatar.style.animation = 'idle-pulse 3s ease-in-out infinite'; // Typing indicator always pulses
-                    avatar.style.filter = 'none'; // No filter
-                    avatar.style.transform = 'scale(1)'; // Full size
-                    avatar.style.opacity = '1'; // Full opacity
+            // Apply historical state to all previous AI messages that are currently visible
+            const allAiMessages = messagesContainer.querySelectorAll('.ai-message');
+            allAiMessages.forEach(message => {
+                const starWrapper = message.querySelector('.star-wrapper.visible'); // Only target visible stars
+                if (starWrapper && starWrapper !== targetStarWrapper) {
+                    starWrapper.classList.add('historical');
                 }
-            }
-
-            // Apply the state only to the currently active star or typing indicator star
-            if (state === 'thinking') {
-                if (typingIndicatorStar) {
-                    typingIndicatorStar.classList.add('thinking');
-                }
-            } else if (state === 'typing') {
-                // Find the very last AI message's star, if it exists
-                const lastAiMessage = messagesContainer.querySelector('.ai-message:last-of-type');
-                if (lastAiMessage) {
-                    const lastStarWrapper = lastAiMessage.querySelector('.star-wrapper');
-                    if (lastStarWrapper) {
-                        lastStarWrapper.classList.add('typing');
-                        const avatar = lastStarWrapper.querySelector('.ai-avatar');
-                        if (avatar) { 
-                            avatar.style.animation = 'typing-bounce 0.6s ease-in-out infinite alternate'; // Typing specific animation
-                            avatar.style.filter = 'none'; 
-                            avatar.style.transform = 'scale(1)';
-                            avatar.style.opacity = '1';
-                        }
-                    }
-                }
-            }
-            // When state is 'idle' (e.g., after typing finishes or before thinking starts)
-            // ensure the *very last* AI message's star is active.
-            const currentLastAiMessage = messagesContainer.querySelector('.ai-message:last-of-type');
-            if (currentLastAiMessage && state === 'idle') {
-                const currentLastStarWrapper = currentLastAiMessage.querySelector('.star-wrapper');
-                if (currentLastStarWrapper) {
-                    const avatar = currentLastStarWrapper.querySelector('.ai-avatar');
-                    if (avatar) {
-                        avatar.style.animation = 'idle-pulse 3s ease-in-out infinite';
-                        avatar.style.filter = 'none';
-                        avatar.style.transform = 'scale(1)';
-                        avatar.style.opacity = '1';
-                    }
-                }
-            }
+            });
+            
+            // Apply the specific animation state to the target star wrapper if provided
+            if (targetStarWrapper) {
+                targetStarWrapper.classList.add(state);
+            } 
+            // The welcome message star's state is handled directly in loadHistory/clearChat for better control.
         }
 
-        function addMessage(text, isUser = false) { // Removed isWelcome parameter as it's handled differently
-            // When adding a new message, immediately remove any existing welcome message
-            const welcomeMsg = document.querySelector('.welcome-message');
-            if (welcomeMsg) {
-                welcomeMsg.remove();
+        /**
+         * Adds a new message to the chat display.
+         * @param {string} text - The message text.
+         * @param {boolean} isUser - True if it's a user message, false for AI message.
+         * @returns {object} {messageDiv: HTMLElement, typingDiv: HTMLElement, aiAvatarContainer: HTMLElement, starWrapperDiv: HTMLElement, geminiLoaderWrapper: HTMLElement} for AI messages.
+         * {messageDiv: HTMLElement} for user messages.
+         */
+        function addMessage(text, isUser = false) {
+            // Hide welcome message once chat starts
+            if (welcomeMessageDiv) {
+                welcomeMessageDiv.classList.add('hidden'); 
+                // Also hide the welcome star and remove its active state
+                if (welcomeStar) {
+                    welcomeStar.classList.remove('visible', 'active');
+                }
             }
 
             const messageDiv = document.createElement('div');
@@ -636,152 +698,327 @@
                 bubbleDiv.className = 'bubble';
                 bubbleDiv.textContent = text;
                 messageDiv.appendChild(bubbleDiv);
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                return { messageDiv: messageDiv }; // Return only messageDiv for user
             } else {
+                // Create the common container for both loader and star
+                const aiAvatarContainer = document.createElement('div');
+                aiAvatarContainer.className = 'ai-avatar-container';
+
+                // Create star wrapper (initially not visible)
                 const starWrapperDiv = document.createElement('div');
-                starWrapperDiv.className = 'star-wrapper';
+                starWrapperDiv.className = 'star-wrapper'; // Will have 'visible' added later
                 starWrapperDiv.innerHTML = `<div class="ai-avatar">${geminiStarSVG}</div>`;
+                
+                // Create Gemini loader wrapper (visible initially)
+                const geminiLoaderWrapper = document.createElement('div');
+                geminiLoaderWrapper.className = 'gemini-loader-wrapper visible'; 
+                geminiLoaderWrapper.innerHTML = `
+                    <div class="gemini-loader">
+                        <span class="dot-1"></span>
+                        <span class="dot-2"></span>
+                        <span class="dot-3"></span>
+                    </div>
+                `;
                 
                 const bubbleDiv = document.createElement('div');
                 bubbleDiv.className = 'bubble';
                 
                 const typingDiv = document.createElement('div');
-                typingDiv.className = 'typing-text';
+                typingDiv.className = 'typing-text'; // This will hold the AI's response
                 
                 bubbleDiv.appendChild(typingDiv);
-                messageDiv.appendChild(starWrapperDiv);
-                messageDiv.appendChild(bubbleDiv);
-                
-                // For AI messages, we immediately set the state to idle to dim previous stars
-                setStarState('idle'); // This will apply the dimming to older stars
+                aiAvatarContainer.appendChild(geminiLoaderWrapper); // Add loader to container
+                aiAvatarContainer.appendChild(starWrapperDiv); // Add star to container, initially hidden
 
-                // For a NEW AI message, we want it to type
-                typeText(typingDiv, text); 
+                messageDiv.appendChild(aiAvatarContainer); // Add the container to the message
+                messageDiv.appendChild(bubbleDiv);
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to new message placeholder
+
+                return { messageDiv: messageDiv, typingDiv: typingDiv, aiAvatarContainer: aiAvatarContainer, starWrapperDiv: starWrapperDiv, geminiLoaderWrapper: geminiLoaderWrapper };
             }
-            
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
-            return messageDiv;
         }
 
-        function typeText(element, text, speed = 30) {
-            setStarState('typing'); // Sets typing state for the current (last) message's star
-            element.innerHTML = ''; 
+        /**
+         * Simulates typing animation for AI responses.
+         * @param {HTMLElement} element - The element to type into (e.g., a div inside the bubble).
+         * @param {string} text - The full text to type.
+         * @param {HTMLElement} starWrapper - The star wrapper associated with this message.
+         * @param {HTMLElement} geminiLoaderWrapper - The Gemini loader wrapper to hide.
+         * @param {number} speed - Typing speed in milliseconds per character.
+         */
+        function typeText(element, text, starWrapper, geminiLoaderWrapper, speed = 30) {
+            isTyping = true;
+            userScrolledUp = !isNearBottom(); // Re-evaluate scroll state at the start of typing
             
+            // Seamless transition: hide loader, show star, then set star animation state
+            if (geminiLoaderWrapper) {
+                geminiLoaderWrapper.classList.remove('visible'); // Start fading out loader
+                geminiLoaderWrapper.classList.add('hidden');
+            }
+            if (starWrapper) {
+                starWrapper.classList.remove('hidden'); // Start fading in star
+                starWrapper.classList.add('visible');
+                setStarAnimationState(starWrapper, 'typing'); // Apply typing animation state
+            }
+
+            element.innerHTML = ''; // Clear existing content
+            
+            // Add a blinking cursor
             const cursorSpan = document.createElement('span');
             cursorSpan.className = 'cursor';
             element.appendChild(cursorSpan);
 
             let i = 0;
-            
+            let scrollCount = 0;
+            const scrollThreshold = 3; // Scroll after every N characters
+
             function type() {
                 if (i < text.length) {
-                    const charsToAdd = Math.min(Math.floor(Math.random() * 2) + 1, text.length - i);
+                    const charsToAdd = Math.min(Math.floor(Math.random() * 2) + 1, text.length - i); // Type 1-2 chars at a time
                     const textSegment = text.substring(i, i + charsToAdd);
                     
+                    // Insert text before the cursor
                     cursorSpan.insertAdjacentHTML('beforebegin', textSegment);
                     i += charsToAdd;
                     
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    scrollCount += charsToAdd;
                     
-                    setTimeout(type, speed);
+                    // Only auto-scroll if the user hasn't scrolled up
+                    if (scrollCount >= scrollThreshold && !userScrolledUp) {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        scrollCount = 0; // Reset scroll counter
+                    }
+                    
+                    // Clear any existing timer and set a new one to prevent multiple timers
+                    if (typingTimer) {
+                        clearTimeout(typingTimer);
+                    }
+                    
+                    typingTimer = setTimeout(type, speed);
                 } else {
-                    element.innerHTML = text; // Replace with full text once done
-                    setStarState('idle'); // After typing, set the star state back to idle (active pulse)
+                    // Typing finished: remove cursor and ensure full text is displayed
+                    element.innerHTML = text; 
+                    
+                    // Perform a final scroll to bottom if user hasn't scrolled up
+                    if (!userScrolledUp) {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }
+                    
+                    isTyping = false; // Typing is complete
+                    userScrolledUp = !isNearBottom(); // Final check of scroll state
+                    
+                    // Set the star to active idle state after typing
+                    if (starWrapper) {
+                        setStarAnimationState(starWrapper, 'active');
+                    } else {
+                        // This case should ideally not happen for AI message stars
+                        // unless there's an error in logic or HTML structure.
+                        // It serves as a fallback.
+                        console.warn("Star wrapper not found after typing completed.");
+                    }
                 }
             }
             
-            setTimeout(type, 500); // Initial delay before typing starts
+            // Initial delay before typing starts for a more natural feel
+            typingTimer = setTimeout(type, 500); 
         }
 
-        function showTypingIndicator() {
-            setStarState('thinking'); 
-            typingIndicator.style.display = 'block';
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
-        function hideTypingIndicator() {
-            typingIndicator.style.display = 'none';
-            setStarState('idle'); // After hiding indicator, ensure the last AI message's star becomes active
-        }
-
+        /**
+         * Handles sending a message to the backend.
+         */
         async function sendMessage() {
             const message = messageInput.value.trim();
-            if (!message) return;
+            if (!message) return; // Don't send empty messages
 
-            addMessage(message, true); // User message
-            messageInput.value = '';
-            sendBtn.disabled = true;
-            showTypingIndicator();
+            addMessage(message, true); // Add user message to display
+            messageInput.value = ''; // Clear input field
+            sendBtn.disabled = true; // Disable send button while waiting for response
+
+            // Add AI message placeholder, which now includes the loader, and set loader visible
+            const aiMessageElements = addMessage('', false);
+            const typingDiv = aiMessageElements.typingDiv;
+            const aiStarWrapper = aiMessageElements.starWrapperDiv;
+            const geminiLoaderWrapper = aiMessageElements.geminiLoaderWrapper;
 
             try {
-                const thinkingDelay = Math.random() * 1000 + 800; 
-                await new Promise(resolve => setTimeout(resolve, thinkingDelay));
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message })
+                });
 
-                hideTypingIndicator(); 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
-                const actualResponse = "That's an excellent goal! To refine your career strategy, let's explore three key areas: 1) **Skill Alignment:** What specific skills do you possess that are transferable to your desired role or industry? 2) **Market Research:** What are the current demands and trends in that sector? 3) **Networking:** Who are the key professionals you should connect with? We can deep-dive into any of these, or perhaps start with a quick assessment of your core strengths.";
+                const data = await response.json();
+                let actualResponse = data.response;
+                
+                // Remove the initial prompt from the AI response if it's accidentally included
+                const promptPrefix = "As a professional AI Career Counselor with expertise in: - Career guidance and planning - Resume and interview advice - Industry trends and job market insights - Skills development recommendations - Career transition strategies - Professional networking guidance - Salary negotiation tips - Work-life balance advice Always provide helpful, supportive, and actionable career advice. Ask clarifying questions to better understand the user's situation, goals, and background. Be encouraging while remaining realistic about career prospects and challenges. Start conversations by introducing yourself and asking how I can help with their career journey today.";
+                if (actualResponse.startsWith(promptPrefix)) {
+                    actualResponse = actualResponse.substring(promptPrefix.length).trim();
+                }
 
-                addMessage(actualResponse, false); // AI response (will type out)
-
-                sendBtn.disabled = false;
-                messageInput.focus();
+                // Start typing into the existing placeholder, which will trigger the loader-to-star transition
+                typeText(typingDiv, actualResponse, aiStarWrapper, geminiLoaderWrapper); 
+                sendBtn.disabled = false; // Re-enable send button
+                messageInput.focus(); // Focus input for next message
 
             } catch (error) {
-                setTimeout(() => {
-                    hideTypingIndicator();
-                    setStarState('idle');
-                    addMessage('Oops! It seems I lost my connection. Please try sending your message again.', false);
-                    sendBtn.disabled = false;
-                    messageInput.focus();
-                }, 1000);
+                console.error('Error sending message:', error);
+                // Hide loader and show star in error state
+                if (geminiLoaderWrapper) {
+                    geminiLoaderWrapper.classList.remove('visible');
+                    geminiLoaderWrapper.classList.add('hidden');
+                }
+                if (aiStarWrapper) {
+                    aiStarWrapper.classList.remove('hidden');
+                    aiStarWrapper.classList.add('visible', 'historical'); // Show star, but in a muted state for error
+                }
+                typingDiv.textContent = "Oops! Something went wrong. Please try again later.";
+                sendBtn.disabled = false; // Re-enable send button
             }
         }
 
+        /**
+         * Loads chat history from the backend.
+         */
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/history');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (data.messages && data.messages.length > 0) {
+                    // Hide welcome message if history exists
+                    if (welcomeMessageDiv) {
+                        welcomeMessageDiv.classList.add('hidden');
+                        if (welcomeStar) { // Hide and deactivate welcome star
+                            welcomeStar.classList.remove('visible', 'active');
+                        }
+                    }
+                    messagesContainer.innerHTML = ''; // Clear initial welcome message before loading history
+                    data.messages.forEach(msg => {
+                        // For historical messages, we add them directly without typing animation
+                        const userMsgDiv = document.createElement('div');
+                        userMsgDiv.className = 'message user-message';
+                        const userBubble = document.createElement('div');
+                        userBubble.className = 'bubble';
+                        userBubble.textContent = msg.user;
+                        userMsgDiv.appendChild(userBubble);
+                        messagesContainer.appendChild(userMsgDiv);
+
+                        const aiMsgDiv = document.createElement('div');
+                        aiMsgDiv.className = 'message ai-message';
+
+                        // Create the common container for both loader and star for historical messages
+                        const aiAvatarContainer = document.createElement('div');
+                        aiAvatarContainer.className = 'ai-avatar-container';
+
+                        const starWrapperDiv = document.createElement('div');
+                        starWrapperDiv.className = 'star-wrapper visible historical'; // Visible and historical
+                        starWrapperDiv.innerHTML = `<div class="ai-avatar">${geminiStarSVG}</div>`;
+                        
+                        // Gemini loader not needed for historical messages, but create a hidden one for consistency if ever needed
+                        const geminiLoaderWrapper = document.createElement('div');
+                        geminiLoaderWrapper.className = 'gemini-loader-wrapper hidden'; 
+                        geminiLoaderWrapper.innerHTML = `
+                            <div class="gemini-loader">
+                                <span class="dot-1"></span>
+                                <span class="dot-2"></span>
+                                <span class="dot-3"></span>
+                            </div>
+                        `;
+
+                        const aiBubble = document.createElement('div');
+                        aiBubble.className = 'bubble';
+                        aiBubble.textContent = msg.ai;
+
+                        aiAvatarContainer.appendChild(geminiLoaderWrapper);
+                        aiAvatarContainer.appendChild(starWrapperDiv);
+
+                        aiMsgDiv.appendChild(aiAvatarContainer);
+                        aiMsgDiv.appendChild(aiBubble);
+                        messagesContainer.appendChild(aiMsgDiv);
+                    });
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to bottom of history
+                    setStarAnimationState(null, 'active'); // Set the last message's star to active
+                } else {
+                    // If no history, ensure welcome message is visible and its star is animated
+                    if (welcomeMessageDiv) {
+                        welcomeMessageDiv.classList.remove('hidden'); // Ensure it's displayed
+                        // Directly activate welcome star
+                        if (welcomeStar) {
+                            welcomeStar.classList.add('visible', 'active');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+                // If history fails to load, ensure welcome message is still shown as a fallback
+                if (welcomeMessageDiv) {
+                    welcomeMessageDiv.classList.remove('hidden');
+                    if (welcomeStar) {
+                        welcomeStar.classList.add('visible', 'active');
+                    }
+                }
+            }
+        }
+
+        /**
+         * Clears the chat history.
+         */
         async function clearChat() {
-            if (confirm('Are you sure you want to clear the chat history?')) {
-                messagesContainer.innerHTML = ''; // Clear all messages
-                // Re-add the welcome message
-                messagesContainer.innerHTML = `
-                    <div class="welcome-message">
-                        <div class="star-wrapper logo-large">
-                            <div class="ai-avatar">${geminiStarSVG}</div>
-                        </div>
-                        <h3>Welcome to your AI Career Counselor!</h3>
-                        <p>I'm here to help you with career guidance, job search strategies, resume advice, and more. How can I assist you today?</p>
-                    </div>
-                `;
-                setStarState('idle'); // Reset star state after clearing chat
+            try {
+                const response = await fetch('/api/clear');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (data.status === 'cleared') {
+                    messagesContainer.innerHTML = ''; // Clear messages from UI
+                    // Show welcome message again
+                    if (welcomeMessageDiv) {
+                        welcomeMessageDiv.classList.remove('hidden');
+                        // Directly activate welcome star
+                        if (welcomeStar) {
+                            welcomeStar.classList.add('visible', 'active');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error clearing chat:', error);
+                // Optionally inform user about error
             }
         }
 
-        // Event listeners
+        // Event Listeners
         sendBtn.addEventListener('click', sendMessage);
-        clearBtn.addEventListener('click', clearChat);
-
         messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !sendBtn.disabled) {
                 sendMessage();
             }
         });
+        messageInput.addEventListener('input', () => {
+            // Enable send button only if input is not empty
+            sendBtn.disabled = messageInput.value.trim().length === 0;
+        });
+        clearBtn.addEventListener('click', clearChat);
 
-        // Initialize chat with ONLY the welcome message
-        function initializeChat() {
-            messagesContainer.innerHTML = `
-                <div class="welcome-message">
-                    <div class="star-wrapper logo-large">
-                        <div class="ai-avatar">${geminiStarSVG}</div>
-                    </div>
-                    <h3>Welcome to your AI Career Counselor!</h3>
-                    <p>I'm here to help you with career guidance, job search strategies, resume advice, and more. How can I assist you today?</p>
-                </div>
-            `;
-            setStarState('idle'); // Ensure the welcome message star is active
-            messageInput.focus(); // Focus input
-        }
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await clearChat(); // Clear chat history on every load
+            await loadHistory(); // Then load history (will be empty, showing welcome)
+            sendBtn.disabled = true; // Disable send button initially
+        });
 
-        // Call the initialization function when the DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', initializeChat);
     </script>
 </body>
 </html>
